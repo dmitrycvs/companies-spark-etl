@@ -1,21 +1,14 @@
 from datasets import load_dataset
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, String, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
-import os
+
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.env_config import db_properties
 
 ds = load_dataset("egecandrsn/weatherdata")
-
-load_dotenv()
-
-db_name = os.getenv("DB_NAME")
-db_user = os.getenv("DB_USER")
-db_password = os.getenv("DB_PASSWORD")
-db_host = os.getenv("DB_HOST")
-db_port = os.getenv("DB_PORT")
-
 
 Base = declarative_base()
 class Weather(Base):
@@ -36,7 +29,8 @@ class Weather(Base):
     cloudcover = Column(Float)
     severerisk = Column(Float)
 
-engine = create_engine(f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+engine = create_engine(f"postgresql+psycopg2://{db_properties['db_user']}:{db_properties['db_password']}\
+                        @{db_properties['db_host']}:{db_properties['db_port']}/{db_properties['db_name']}")
 
 try:
     with engine.connect() as connection:
