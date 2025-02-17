@@ -5,23 +5,36 @@ import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.env_config import db_properties
 
-jdbc_url = f"jdbc:postgresql://{db_properties['db_host']}:{db_properties['db_port']}/{db_properties['db_name']}"
+# PostgreSQL JDBC URL
+jdbc_url_postgres = f"jdbc:postgresql://{db_properties['db_host']}:{db_properties['db_port']}/{db_properties['db_name']}"
+
+# Redshift JDBC URL
+jdbc_url_redshift = f"jdbc:redshift://{db_properties['jdbc_redshift']}"
+
 
 spark = SparkSession.builder \
-    .appName("PostgreSQL-Spark Integration") \
-    .config("spark.jars", db_properties['path_jdbc']) \
+    .appName("weather-data_Spark") \
+    .config("spark.jars", f"{db_properties['path_postgres_jdbc']},{db_properties['path_redshift_jdbc']}") \
     .getOrCreate()
 
-spark_properties = {
+# Postgres connection properties
+spark_properties_postgres = {
     "user": db_properties['db_user'],
     "password": db_properties['db_password'],
     "driver": "org.postgresql.Driver"
 }
 
+# Redshift connection properties
+spark_properties_redshift = {
+    "user": db_properties['redshift_user'],
+    "password": db_properties['redshift_password'],
+    "driver": "com.amazon.redshift.jdbc42.Driver"
+}
+
 df = spark.read.format("jdbc") \
-    .option("url", jdbc_url) \
+    .option("url", jdbc_url_postgres) \
     .option("dbtable", db_properties['table_name']) \
-    .options(**spark_properties) \
+    .options(**spark_properties_postgres) \
     .load()
 
 # Remove duplicates and missing values
@@ -38,5 +51,12 @@ df = df.withColumn("day_of_year", dayofyear(col("date")))
 df = df.drop("datetime")
 
 df.show()
+
+df.write.format("jdbc") \
+    .option("url", jdbc_url_redshift) \
+    .option("dbtable", db_properties['table_name']) \
+    .options(**spark_properties_redshift) \
+    .mode("overwrite") \
+    .save()
 
 spark.stop()
