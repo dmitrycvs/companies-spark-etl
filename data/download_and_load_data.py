@@ -1,7 +1,6 @@
 from datasets import load_dataset
 from sqlalchemy import create_engine, Column, String, Float, Integer
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import OperationalError
 
 import os, sys
@@ -12,7 +11,7 @@ ds = load_dataset("egecandrsn/weatherdata")
 
 Base = declarative_base()
 class Weather(Base):
-    __tablename__ = 'weather_data'
+    __tablename__ = db_properties['table_name']
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
     datetime = Column(String)
@@ -24,13 +23,12 @@ class Weather(Base):
     feelslike = Column(Float)
     dew = Column(Float)
     humidity = Column(Float)
-    precib = Column(Float)
+    precip = Column(Float)
     windspeed = Column(Float)
     cloudcover = Column(Float)
     severerisk = Column(Float)
 
-engine = create_engine(f"postgresql+psycopg2://{db_properties['db_user']}:{db_properties['db_password']}\
-                        @{db_properties['db_host']}:{db_properties['db_port']}/{db_properties['db_name']}")
+engine = create_engine(f"postgresql+psycopg2://{db_properties['db_user']}:{db_properties['db_password']}@{db_properties['db_host']}:{db_properties['db_port']}/{db_properties['db_name']}")
 
 try:
     with engine.connect() as connection:
@@ -55,7 +53,7 @@ for record in ds['train']:
         feelslike=record.get("feelslike", None),
         dew=record.get("dew", None),
         humidity=record.get("humidity", None),
-        precib=record.get("precib", None),
+        precip=record.get("precip", None),
         windspeed=record.get("windspeed", None),
         cloudcover=record.get("cloudcover", None),
         severerisk=record.get("severerisk", None),
